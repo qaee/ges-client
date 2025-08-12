@@ -1,102 +1,189 @@
+"use client";
+
+import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Package, TrendingUp, Users, Shield } from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <Image
+                src="/logo_gws.png"
+                alt="GWS Logo"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              <span className="font-semibold text-lg">MerchantConnect</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/login">
+                <Button variant="outline">Sign In</Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="gws">Get Started</Button>
+              </Link>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center max-w-4xl mx-auto">
+          <h1 className="text-5xl font-bold text-gws-navy mb-6">
+            Global Wholesale Sources Inc.
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Revolutionizing global trade by connecting buyers and sellers of high-quality, 
+            discounted merchandise through our AI-powered B2B e-commerce platform
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Link href="/register">
+              <Button size="lg" variant="gws" className="flex items-center">
+                Start Trading <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/login">
+              <Button size="lg" variant="outline">
+                Explore Platform
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold text-center text-gws-navy mb-12">
+          Why Choose GWS MerchantConnect?
+        </h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border border-gray-300">
+            <CardHeader>
+              <Package className="h-10 w-10 text-gws-gold mb-2" />
+              <CardTitle>Closeout Deals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Access factory overruns, excess inventory, and liquidation deals across diverse categories
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-300">
+            <CardHeader>
+              <TrendingUp className="h-10 w-10 text-gws-gold mb-2" />
+              <CardTitle>AI-Driven Matching</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Real-time inventory matching, predictive pricing, and automated logistics coordination
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-300">
+            <CardHeader>
+              <Users className="h-10 w-10 text-gws-gold mb-2" />
+              <CardTitle>Three-Tier Strategy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Tailored solutions for enterprise retailers, all retailers, and SMB resellers
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-gray-300">
+            <CardHeader>
+              <Shield className="h-10 w-10 text-gws-gold mb-2" />
+              <CardTitle>Secure Trading</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Protected transactions with verified merchants and secure payment processing
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Market Segments */}
+      <section className="bg-gws-navy text-white py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-12">
+            Serving All Market Segments
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-gws-gold text-gws-navy rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <span className="font-bold text-2xl">T1</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Enterprise Retailers</h3>
+              <p className="text-gray-300">
+                High-touch partnerships for bulk closeout purchases and exclusive access to branded inventory
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-gws-gold text-gws-navy rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <span className="font-bold text-2xl">T2</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">All Retailers</h3>
+              <p className="text-gray-300">
+                Aggressive outreach for liquidation deals through dynamic digital campaigns
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-gws-gold text-gws-navy rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <span className="font-bold text-2xl">T3</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">SMB Resellers</h3>
+              <p className="text-gray-300">
+                Empowering Amazon, Walmart, and Shopify sellers with discounted inventory
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="bg-gradient-to-r from-gws-gold to-gws-darkgold rounded-2xl p-12 text-center">
+          <h2 className="text-3xl font-bold text-gws-navy mb-4">
+            Ready to Transform Your Business?
+          </h2>
+          <p className="text-gws-navy/80 mb-8 max-w-2xl mx-auto">
+            Join thousands of businesses leveraging our platform to optimize costs, 
+            scale profitability, and thrive in competitive markets
+          </p>
+          <Link href="/register">
+            <Button size="lg" className="bg-gws-navy text-white hover:bg-gws-darknavy">
+              Get Started Today <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="mb-2">© 2025 Global Wholesale Sources Inc. All rights reserved.</p>
+            <p className="text-gray-400 italic">
+              "Empowering Global Trade, One Deal at a Time."
+            </p>
+          </div>
+        </div>
       </footer>
     </div>
   );
