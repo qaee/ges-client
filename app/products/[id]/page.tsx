@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { productService } from "@/services/api";
 import { Product } from "@/types";
+import ProductImageGallery from "@/components/ProductImageGallery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -115,7 +116,7 @@ export default function ProductDetailsPage() {
           <div className="text-center py-20">
             <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-600 mb-2">Product Not Found</h2>
-            <p className="text-gray-500 mb-6">The product you're looking for doesn't exist.</p>
+            <p className="text-gray-500 mb-6">The product you&apos;re looking for doesn&apos;t exist.</p>
             <Link href="/dashboard">
               <Button variant="gws">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -207,12 +208,12 @@ export default function ProductDetailsPage() {
               </CardHeader>
               
               <CardContent className="p-8">
-                {/* Product Image Placeholder */}
-                <div className="aspect-video bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl mb-6 flex items-center justify-center border-2 border-dashed border-gws-gold/30">
-                  <div className="text-center">
-                    <Package className="h-20 w-20 text-gws-gold mb-4 mx-auto" />
-                    <p className="text-gray-500">Product Image</p>
-                  </div>
+                {/* Product Image Gallery */}
+                <div className="mb-6">
+                  <ProductImageGallery 
+                    images={product.images || []}
+                    productName={product.name}
+                  />
                 </div>
 
                 {/* Description */}

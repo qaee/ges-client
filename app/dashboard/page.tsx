@@ -149,27 +149,48 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Search Bar */}
-        <Card className="mb-8 bg-gradient-to-r from-white to-blue-50 border border-blue-200 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-gws-navy to-gws-darknavy text-white rounded-t-lg">
-            <CardTitle className="text-xl">🔍 Search Products</CardTitle>
-            <CardDescription className="text-white/80">Find closeout deals and discounted merchandise</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex space-x-3">
-              <Input
-                placeholder="Search by name, brand, or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="border-2 border-gws-gold/30 focus:border-gws-gold focus:ring-gws-gold/20 text-lg py-3"
-              />
-              <Button onClick={handleSearch} variant="gws" className="px-6 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                <Search className="h-5 w-5 mr-2" /> Search
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Action Bar */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* Search Bar */}
+          <Card className="bg-gradient-to-r from-white to-blue-50 border border-blue-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gws-navy to-gws-darknavy text-white rounded-t-lg">
+              <CardTitle className="text-xl">🔍 Search Products</CardTitle>
+              <CardDescription className="text-white/80">Find closeout deals and discounted merchandise</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex space-x-3">
+                <Input
+                  placeholder="Search by name, brand, or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="border-2 border-gws-gold/30 focus:border-gws-gold focus:ring-gws-gold/20 text-lg py-3"
+                />
+                <Button onClick={handleSearch} variant="gws" className="px-6 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  <Search className="h-5 w-5 mr-2" /> Search
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Product Creation */}
+          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
+              <CardTitle className="text-xl">🤖 AI Product Creation</CardTitle>
+              <CardDescription className="text-white/80">Upload files and let AI extract product data</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-gray-600 mb-4 text-sm">
+                Upload emails, PDFs, Excel files, or images containing product information.
+              </p>
+              <Link href="/products/create">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                  🚀 Start AI Wizard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Products Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">

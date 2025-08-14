@@ -180,7 +180,7 @@ export default function HomePage() {
           <div className="text-center">
             <p className="mb-2">© 2025 Global Wholesale Sources Inc. All rights reserved.</p>
             <p className="text-gray-400 italic">
-              "Empowering Global Trade, One Deal at a Time."
+              &ldquo;Empowering Global Trade, One Deal at a Time.&rdquo;
             </p>
           </div>
         </div>

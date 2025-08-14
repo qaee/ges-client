@@ -44,7 +44,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterFormData) => {
     setLoading(true);
     try {
-      const { confirmPassword, ...registerData } = data;
+      const { confirmPassword: _, ...registerData } = data;
       await registerUser(registerData);
       router.push("/dashboard");
     } catch (error) {

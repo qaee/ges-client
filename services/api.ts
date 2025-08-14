@@ -93,4 +93,33 @@ export const productService = {
   },
 };
 
+export const aiExtractionService = {
+  getSupportedFileTypes: async () => {
+    const response = await api.get('/ai-extraction/supported-types');
+    return response.data;
+  },
+
+  uploadAndProcess: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/ai-extraction/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  validateExtraction: async (extractedProducts: any[]) => {
+    const response = await api.post('/ai-extraction/validate-extraction', extractedProducts);
+    return response.data;
+  },
+
+  createProductsFromExtraction: async (extractedProducts: any[]) => {
+    const response = await api.post('/ai-extraction/create-products', extractedProducts);
+    return response.data;
+  },
+};
+
 export default api;
