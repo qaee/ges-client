@@ -73,8 +73,37 @@ export const productService = {
     return response.data;
   },
 
+  searchProductsByFilters: async (filters: {
+    category?: string;
+    type?: string;
+    condition?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    material?: string;
+    brand?: string;
+    tags?: string[];
+  }): Promise<Product[]> => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v));
+        } else {
+          params.append(key, value.toString());
+        }
+      }
+    });
+    const response = await api.get<Product[]>(`/products/public/filter?${params.toString()}`);
+    return response.data;
+  },
+
   createProduct: async (product: Partial<Product>): Promise<Product> => {
     const response = await api.post<Product>('/products', product);
+    return response.data;
+  },
+
+  createBulkProducts: async (products: Partial<Product>[]): Promise<Product[]> => {
+    const response = await api.post<Product[]>('/products/bulk', { products });
     return response.data;
   },
 
@@ -90,6 +119,28 @@ export const productService = {
   getMerchantProducts: async (): Promise<Product[]> => {
     const response = await api.get<Product[]>('/products/merchant');
     return response.data;
+  },
+
+  getProductStats: async (id: number): Promise<{
+    views: number;
+    inquiries: number;
+    favorites: number;
+    lastViewed?: Date;
+  }> => {
+    const response = await api.get(`/products/${id}/stats`);
+    return response.data;
+  },
+
+  updateProductVariants: async (productId: number, variants: Partial<Product>['variants']): Promise<void> => {
+    await api.put(`/products/${productId}/variants`, { variants });
+  },
+
+  updateProductCompliance: async (productId: number, compliance: Partial<Product>['compliance']): Promise<void> => {
+    await api.put(`/products/${productId}/compliance`, { compliance });
+  },
+
+  updateProductShipping: async (productId: number, shipping: Partial<Product>['shipping']): Promise<void> => {
+    await api.put(`/products/${productId}/shipping`, { shipping });
   },
 };
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Save, 
@@ -32,20 +32,46 @@ interface ExtractedProduct {
   type: string;
   originalPrice: number;
   discountedPrice: number;
+  wholesalePrice?: number;
+  retailPrice?: number;
   quantity: number;
   minOrderQuantity: number;
+  maxOrderQuantity?: number;
   sku: string;
+  
+  // Product specifications
+  material?: string;
+  size?: string;
+  color?: string;
+  model?: string;
+  condition: string;
+  
+  // Business information
+  costPrice?: number;
+  currency: string;
+  
+  // Compliance & certification
+  rnNumber?: string;
+  upcCode?: string;
+  
+  // Shipping info
+  casePack?: number;
+  weight?: number;
+  fobPort?: string;
+  
   specifications?: string;
-  condition?: string;
   confidenceScore?: number;
   extractionSource?: string;
   extractionNotes?: string;
   images?: string[];
+  primaryImageIndex?: number;
 }
 
 interface ProductEditorProps {
-  products: ExtractedProduct[];
-  onSave: (products: ExtractedProduct[]) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  products: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSave: (products: any[]) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -57,7 +83,13 @@ const categories = [
   "GENERAL_MERCHANDISE",
   "FOOTWEAR",
   "HOME_GOODS",
-  "ACCESSORIES"
+  "ACCESSORIES",
+  "HEALTH_BEAUTY",
+  "AUTOMOTIVE",
+  "SPORTS_OUTDOORS",
+  "TOYS_GAMES",
+  "FOOD_BEVERAGE",
+  "INDUSTRIAL"
 ];
 
 const productTypes = [
@@ -65,26 +97,36 @@ const productTypes = [
   "OVERSTOCK",
   "FACTORY_OVERRUN",
   "BRANDED",
-  "PRIVATE_LABEL"
+  "PRIVATE_LABEL",
+  "LIQUIDATION",
+  "SHELF_PULLS"
 ];
 
+
 export default function ProductEditor({ products: initialProducts, onSave, onCancel, isLoading }: ProductEditorProps) {
-  const [products, setProducts] = useState<ExtractedProduct[]>(initialProducts);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [products, setProducts] = useState<any[]>(initialProducts);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [selectedImage, setSelectedImage] = useState<{ url: string; productName: string; imageIndex: number; allImages: string[] } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Record<number, boolean[]>>({});
+  const [primaryImages, setPrimaryImages] = useState<Record<number, number>>({});  // productIndex -> imageIndex
 
-  // Initialize selectedImages when products change
+  // Initialize selectedImages and primaryImages when products change
   useEffect(() => {
     const initialSelectedImages: Record<number, boolean[]> = {};
+    const initialPrimaryImages: Record<number, number> = {};
+    
     products.forEach((product, productIndex) => {
       if (product.images && product.images.length > 0) {
         initialSelectedImages[productIndex] = new Array(product.images.length).fill(true);
+        initialPrimaryImages[productIndex] = 0; // First image is primary by default
       }
     });
+    
     setSelectedImages(initialSelectedImages);
+    setPrimaryImages(initialPrimaryImages);
   }, [products]);
 
   // Validate products when products or selectedImages change
@@ -191,10 +233,33 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
       type: "CLOSEOUT",
       originalPrice: 0,
       discountedPrice: 0,
+      wholesalePrice: 0,
+      retailPrice: 0,
       quantity: 0,
       minOrderQuantity: 1,
+      maxOrderQuantity: 1000,
       sku: "",
-      condition: "new",
+      
+      // Product specifications
+      material: "",
+      size: "",
+      color: "",
+      model: "",
+      condition: "NEW",
+      
+      // Business information
+      costPrice: 0,
+      currency: "USD",
+      
+      // Compliance & certification
+      rnNumber: "",
+      upcCode: "",
+      
+      // Shipping info
+      casePack: 1,
+      weight: 0,
+      fobPort: "",
+      
       confidenceScore: 1.0,
       extractionSource: "manual"
     };
@@ -217,15 +282,39 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
       }
       
       const selectedImageIndices = selectedImages[productIndex] || [];
-      const filteredImages = product.images.filter((_, imageIndex) => 
+      const filteredImages = product.images.filter((imageUrl: string, imageIndex: number) => 
         selectedImageIndices[imageIndex] === true
       );
       
+      
+      // Calculate the new primary image index after filtering
+      const originalPrimaryIndex = primaryImages[productIndex] || 0;
+      let newPrimaryIndex = 0;
+      
+      if (filteredImages.length > 0) {
+        // Find which position the original primary image is in the filtered array
+        let filteredPrimaryIndex = 0;
+        let selectedCount = 0;
+        
+        for (let i = 0; i <= originalPrimaryIndex && i < product.images.length; i++) {
+          if (selectedImageIndices[i]) {
+            if (i === originalPrimaryIndex) {
+              filteredPrimaryIndex = selectedCount;
+              break;
+            }
+            selectedCount++;
+          }
+        }
+        newPrimaryIndex = filteredPrimaryIndex;
+      }
+      
       return {
         ...product,
-        images: filteredImages
+        images: filteredImages,
+        primaryImageIndex: newPrimaryIndex
       };
     });
+    
     
     onSave(productsWithSelectedImages);
   };
@@ -248,12 +337,38 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
   };
 
   const toggleImageSelection = (productIndex: number, imageIndex: number) => {
-    setSelectedImages(prev => ({
-      ...prev,
-      [productIndex]: prev[productIndex]?.map((selected, idx) => 
+    setSelectedImages(prev => {
+      const currentSelections = prev[productIndex] || [];
+      const newSelections = currentSelections.map((selected, idx) => 
         idx === imageIndex ? !selected : selected
-      ) || []
-    }));
+      );
+      
+      // If we're unselecting the primary image, find a new primary
+      if (currentSelections[imageIndex] && primaryImages[productIndex] === imageIndex) {
+        const firstSelectedIndex = newSelections.findIndex(selected => selected);
+        if (firstSelectedIndex !== -1) {
+          setPrimaryImages(prevPrimary => ({
+            ...prevPrimary,
+            [productIndex]: firstSelectedIndex
+          }));
+        }
+      }
+      
+      return {
+        ...prev,
+        [productIndex]: newSelections
+      };
+    });
+  };
+
+  const setPrimaryImage = (productIndex: number, imageIndex: number) => {
+    // Only allow setting primary if the image is selected
+    if (selectedImages[productIndex]?.[imageIndex]) {
+      setPrimaryImages(prev => ({
+        ...prev,
+        [productIndex]: imageIndex
+      }));
+    }
   };
 
   const selectAllImages = (productIndex: number, selectAll: boolean) => {
@@ -263,6 +378,14 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
         ...prev,
         [productIndex]: new Array(product.images.length).fill(selectAll)
       }));
+      
+      // Set primary image to first one if selecting all, or reset if deselecting all
+      if (selectAll) {
+        setPrimaryImages(prev => ({
+          ...prev,
+          [productIndex]: 0
+        }));
+      }
     }
   };
 
@@ -598,19 +721,10 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                         </button>
                       </div>
                     </div>
-                    {/* Debug info - remove this in production */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                        <strong>Debug Info:</strong><br/>
-                        • Raw image URLs: {JSON.stringify(product.images.slice(0, 2))}<br/>
-                        • Constructed URLs: {product.images.slice(0, 2).map(url => 
-                          url.startsWith('http') ? url : `/api${url}`).join(', ')}<br/>
-                        • Images array length: {product.images.length}
-                      </div>
-                    )}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {product.images.map((imageUrl, imgIndex) => {
+                      {product.images.map((imageUrl: string, imgIndex: number) => {
                         const isSelected = selectedImages[index]?.[imgIndex] ?? true;
+                        const isPrimary = primaryImages[index] === imgIndex;
                         return (
                           <div key={imgIndex} className="relative group">
                             {/* Selection checkbox */}
@@ -623,6 +737,26 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
+                            
+                            {/* Primary image button */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 z-10">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPrimaryImage(index, imgIndex);
+                                  }}
+                                  className={`text-xs px-2 py-1 rounded text-white font-medium ${
+                                    isPrimary 
+                                      ? 'bg-gws-gold hover:bg-yellow-500' 
+                                      : 'bg-gray-600 hover:bg-gray-700'
+                                  }`}
+                                >
+                                  {isPrimary ? '★ Primary' : 'Set Primary'}
+                                </button>
+                              </div>
+                            )}
                             
                             {/* Selection overlay */}
                             {!isSelected && (

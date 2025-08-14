@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, X, Package } from "lucide-react";
-import { Button } from "./ui/button";
 
 interface ProductImageGalleryProps {
   images: string[];
@@ -13,10 +12,29 @@ export default function ProductImageGallery({ images, productName }: ProductImag
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
 
-  // If no images, show placeholder
+  const handlePrevious = useCallback(() => {
+    setSelectedImageIndex((prev) => (prev === 0 ? (images?.length || 1) - 1 : prev - 1));
+  }, [images?.length]);
+
+  const handleNext = useCallback(() => {
+    setSelectedImageIndex((prev) => (prev === (images?.length || 1) - 1 ? 0 : prev + 1));
+  }, [images?.length]);
+
+  const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    if (e.key === "ArrowLeft") handlePrevious();
+    if (e.key === "ArrowRight") handleNext();
+    if (e.key === "Escape") setIsZoomed(false);
+  }, [handlePrevious, handleNext]);
+
+  useEffect(() => {
+    if (isZoomed) {
+      document.addEventListener("keydown", handleKeyPress);
+      return () => document.removeEventListener("keydown", handleKeyPress);
+    }
+  }, [isZoomed, handleKeyPress]);
+
+  // Early return for no images case - after all hooks
   if (!images || images.length === 0) {
     return (
       <div className="space-y-4">
@@ -33,41 +51,6 @@ export default function ProductImageGallery({ images, productName }: ProductImag
 
   const currentImage = images[selectedImageIndex];
 
-  const handlePrevious = () => {
-    setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    setImageLoading(true);
-    setImageError(false);
-  };
-
-  const handleNext = () => {
-    setSelectedImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    setImageLoading(true);
-    setImageError(false);
-  };
-
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
-
-  const handleImageError = () => {
-    setImageLoading(false);
-    setImageError(true);
-  };
-
-  const handleKeyPress = (e: KeyboardEvent) => {
-    if (e.key === "ArrowLeft") handlePrevious();
-    if (e.key === "ArrowRight") handleNext();
-    if (e.key === "Escape") setIsZoomed(false);
-  };
-
-  useEffect(() => {
-    if (isZoomed) {
-      document.addEventListener("keydown", handleKeyPress);
-      return () => document.removeEventListener("keydown", handleKeyPress);
-    }
-  }, [isZoomed]);
-
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -76,8 +59,12 @@ export default function ProductImageGallery({ images, productName }: ProductImag
     setZoomPosition({ x, y });
   };
 
+  const constructedImageUrl = currentImage.startsWith('http') ? currentImage : 
+    currentImage.startsWith('/api/') ? currentImage : `/api${currentImage}`;
+
   return (
     <div className="space-y-4">
+      
       {/* Main Image Display */}
       <div className="relative group">
         <div 
@@ -86,12 +73,12 @@ export default function ProductImageGallery({ images, productName }: ProductImag
           onMouseMove={handleMouseMove}
         >
           <img
-            src={currentImage.startsWith('http') ? currentImage : `/api${currentImage}`}
+            src={constructedImageUrl}
             alt={`${productName} - Image ${selectedImageIndex + 1}`}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNkg1bDMuNS00LjV6Ii8+Cjwvc3ZnPg==';
+              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDE5VjVjMC0xLjEtLjktMi0yLTJINWMtMS4xIDAtMiAuOS0yIDJ2MTRjMCAxLjEuOSAyIDIgMmgxNGMxLjEgMCAyLS45IDItMnpNOC41IDEzLjVsMi41IDMuMDFMMTQuNSAxMmw0LjUgNkg1bDMuNS00LjV6Ci0+Cjwvc3ZnPg==';
             }}
           />
           
@@ -148,7 +135,8 @@ export default function ProductImageGallery({ images, productName }: ProductImag
               }`}
             >
               <img
-                src={image.startsWith('http') ? image : `/api${image}`}
+                src={image.startsWith('http') ? image : 
+                  image.startsWith('/api/') ? image : `/api${image}`}
                 alt={`${productName} - Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -198,7 +186,7 @@ export default function ProductImageGallery({ images, productName }: ProductImag
               onMouseMove={handleMouseMove}
             >
               <img
-                src={currentImage.startsWith('http') ? currentImage : `/api${currentImage}`}
+                src={constructedImageUrl}
                 alt={`${productName} - Image ${selectedImageIndex + 1} (Zoomed)`}
                 className="max-w-full max-h-full object-contain"
                 style={{

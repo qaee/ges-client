@@ -206,8 +206,31 @@ export default function DashboardPage() {
             products.map((product) => (
               <Card key={product.id} className="bg-white border border-gray-200 hover:shadow-2xl hover:border-gws-gold/50 transition-all duration-300 hover:scale-105 group">
                 <CardHeader>
-                  <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg mb-4 flex items-center justify-center group-hover:from-gws-gold/20 group-hover:to-yellow-100 transition-all duration-300">
-                    <Package className="h-12 w-12 text-gws-gold group-hover:scale-110 transition-transform duration-300" />
+                  <div className="aspect-square bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg mb-4 flex items-center justify-center group-hover:from-gws-gold/20 group-hover:to-yellow-100 transition-all duration-300 overflow-hidden">
+                    {product.images && product.images.length > 0 ? (
+                      <img
+                        src={(() => {
+                          const primaryIndex = product.primaryImageIndex || 0;
+                          const imageUrl = product.images[Math.min(primaryIndex, product.images.length - 1)];
+                          return imageUrl.startsWith('http') ? imageUrl : 
+                            imageUrl.startsWith('/api/') ? imageUrl : `/api${imageUrl}`;
+                        })()}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const parentDiv = target.parentElement;
+                          if (parentDiv) {
+                            parentDiv.innerHTML = `<div class="h-12 w-12 text-gws-gold group-hover:scale-110 transition-transform duration-300"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM20.5 6.5L18 4M6.5 6.5 9 4M18 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/></svg></div><div class="text-xs text-gray-500 mt-1">No Image</div>`;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <Package className="h-12 w-12 text-gws-gold group-hover:scale-110 transition-transform duration-300 mx-auto" />
+                        <p className="text-xs text-gray-500 mt-1">No Image</p>
+                      </div>
+                    )}
                   </div>
                   <CardTitle className="line-clamp-1 text-gws-navy group-hover:text-gws-darknavy">{product.name}</CardTitle>
                   <CardDescription className="line-clamp-2 text-gray-600 text-xs">

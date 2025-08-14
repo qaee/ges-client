@@ -40,7 +40,7 @@ export default function ProductCreateWizardPage() {
   const [extractionResult, setExtractionResult] = useState<{
     filename?: string;
     fileType?: string;
-    extractedProducts?: any[];
+    extractedProducts?: Record<string, unknown>[];
   } | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [creatingProducts, setCreatingProducts] = useState(false);
@@ -147,8 +147,6 @@ export default function ProductCreateWizardPage() {
       
       if (result.success) {
         // The new response format already includes products with images
-        console.log('AI Extraction Result:', result);
-        
         if (result.products && Array.isArray(result.products)) {
           result.extractedProducts = result.products;
         }
@@ -472,7 +470,7 @@ export default function ProductCreateWizardPage() {
                   <AlertCircle className="h-16 w-16 text-orange-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">No Products Found</h3>
                   <p className="text-gray-600 mb-6">
-                    The AI couldn't extract product information from your file. 
+                    The AI couldn&apos;t extract product information from your file. 
                     Please try with a different file or check the file content.
                   </p>
                   <div className="flex justify-center space-x-4">
