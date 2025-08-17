@@ -1,61 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Package, TrendingUp, Users, Shield } from "lucide-react";
+import Header from "@/components/Header";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Image
-                src="/logo_gws.png"
-                alt="GWS Logo"
-                width={40}
-                height={40}
-                className="rounded-lg"
-              />
-              <span className="font-semibold text-lg">MerchantConnect</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="outline">Sign In</Button>
-              </Link>
-              <Link href="/register">
-                <Button variant="gws">Get Started</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-5xl font-bold text-gws-navy mb-6">
-            Global Wholesale Sources Inc.
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Revolutionizing global trade by connecting buyers and sellers of high-quality, 
-            discounted merchandise through our AI-powered B2B e-commerce platform
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Link href="/register">
-              <Button size="lg" variant="gws" className="flex items-center">
-                Start Trading <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline">
-                Explore Platform
-              </Button>
-            </Link>
+      <section className="bg-gws-navy text-white py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl font-bold mb-6">
+              Global Wholesale Sources Inc.
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              Revolutionizing global trade by connecting buyers and sellers of high-quality, 
+              discounted merchandise through our AI-powered B2B e-commerce platform
+            </p>
+            <div className="flex justify-center space-x-4">
+              <Link href="/register">
+                <Button size="lg" className="bg-gws-gold text-gws-navy hover:bg-gws-darkgold">
+                  Start Trading <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/explore">
+                <Button size="lg" className="bg-gws-gold text-gws-navy hover:bg-gws-darkgold">
+                  Explore Platform <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

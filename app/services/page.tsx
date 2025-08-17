@@ -1,47 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowRight, Package, Truck, Shield, BarChart, Globe, Zap, HeadphonesIcon, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Header from '@/components/Header';
 
 export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              <Link href="/" className="flex items-center space-x-2">
-                <Image
-                  src="/logo_gws.png"
-                  alt="GWS Logo"
-                  width={40}
-                  height={40}
-                  className="rounded-lg"
-                />
-                <span className="font-semibold text-lg">GWS MerchantConnect</span>
-              </Link>
-              <div className="hidden md:flex space-x-6">
-                <Link href="/" className="text-gray-600 hover:text-gws-navy">Home</Link>
-                <Link href="/about" className="text-gray-600 hover:text-gws-navy">About</Link>
-                <Link href="/services" className="text-gws-navy font-medium">Services</Link>
-                <Link href="/contact" className="text-gray-600 hover:text-gws-navy">Contact</Link>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="outline">Sign In</Button>
-              </Link>
-              <Link href="/register">
-                <Button variant="gws">Get Started</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <section className="bg-gws-navy text-white py-20">
