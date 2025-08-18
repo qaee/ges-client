@@ -11,8 +11,10 @@ const config: Config = {
     extend: {
       colors: {
         gws: {
-          gold: "#C9A961",
-          darkgold: "#B8924A",
+          gold: "#f28c28",
+          orange: "#f28c28",
+          darkgold: "#e67a14",
+          darkorange: "#e67a14",
           navy: "#1a2332",
           darknavy: "#0f1824",
           gray: "#6B7280",

@@ -9,6 +9,7 @@ import { aiExtractionService } from "@/services/api";
 import ProductEditor from "@/components/ProductEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Upload, 
   ArrowLeft, 
@@ -23,7 +24,8 @@ import {
   RefreshCw,
   Sparkles,
   ChevronRight,
-  Plus
+  Plus,
+  Type
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,6 +52,8 @@ export default function ProductCreateWizardPage() {
     discountedPrice: number;
     quantity: number;
   }>>([]);
+  const [textInput, setTextInput] = useState("");
+  const [processingText, setProcessingText] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -170,6 +174,42 @@ export default function ProductCreateWizardPage() {
     }
   };
 
+  const processTextInput = async () => {
+    if (!textInput.trim()) {
+      toast.error("Please enter some text to process.");
+      return;
+    }
+
+    setProcessingText(true);
+    
+    try {
+      const result = await aiExtractionService.processText(textInput.trim());
+      
+      if (result.success) {
+        // The response format should match file processing
+        if (result.products && Array.isArray(result.products)) {
+          result.extractedProducts = result.products;
+        }
+        
+        // Ensure we have an array of products
+        if (!result.extractedProducts) {
+          result.extractedProducts = [];
+        }
+        
+        setExtractionResult(result);
+        setStep(2);
+        toast.success("AI text processing completed successfully!");
+      } else {
+        toast.error(result.errorMessage || "Failed to process text");
+      }
+    } catch (error) {
+      console.error('Text processing error:', error);
+      toast.error("Failed to process text. Please try again.");
+    } finally {
+      setProcessingText(false);
+    }
+  };
+
   const handleSaveProducts = async (editedProducts: Array<Record<string, unknown>>) => {
     setCreatingProducts(true);
     
@@ -204,6 +244,7 @@ export default function ProductCreateWizardPage() {
   const resetWizard = () => {
     setStep(1);
     setFiles([]);
+    setTextInput("");
     setExtractionResult(null);
     setCreatedProducts([]);
   };
@@ -301,6 +342,25 @@ export default function ProductCreateWizardPage() {
             </CardHeader>
             
             <CardContent className="p-8">
+              {/* Input Options Tabs */}
+              <div className="mb-8">
+                <div className="flex border-b border-gray-200">
+                  <button
+                    className="flex items-center px-4 py-2 border-b-2 border-gws-gold text-gws-gold font-medium"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </button>
+                  <button
+                    className="flex items-center px-4 py-2 text-gray-500 hover:text-gray-700"
+                    onClick={() => {/* We'll implement tab switching later if needed */}}
+                  >
+                    <Type className="h-4 w-4 mr-2" />
+                    Text Input
+                  </button>
+                </div>
+              </div>
+
               {/* File Drop Zone */}
               <div
                 className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
@@ -331,18 +391,66 @@ export default function ProductCreateWizardPage() {
                 />
                 
                 <Button 
-                  variant="gws" 
-                  className="cursor-pointer"
                   onClick={handleSelectClick}
                   type="button"
+                  className="bg-gradient-to-r from-gws-gold to-yellow-500 hover:from-yellow-500 hover:to-gws-gold text-gws-navy font-semibold px-8 py-3 text-lg cursor-pointer"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-5 w-5 mr-2" />
                   Select Files
                 </Button>
                 
                 <div className="mt-6 text-sm text-gray-500">
                   <p>Supported formats: PDF, Excel (.xlsx, .xls), Images (JPG, PNG), Email files</p>
                   <p>Maximum file size: 10MB per file</p>
+                </div>
+              </div>
+
+              {/* OR Separator */}
+              <div className="flex items-center my-8">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="px-4 text-sm text-gray-500 bg-white">OR</span>
+                <div className="flex-1 border-t border-gray-300"></div>
+              </div>
+
+              {/* Text Input Section */}
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8">
+                <div className="text-center mb-6">
+                  <Type className="h-16 w-16 text-gws-gold mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                    Paste Product Information
+                  </h3>
+                  <p className="text-gray-500">
+                    Enter product details as text and let AI extract the information
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Paste product information here...&#10;&#10;Example:&#10;UPC # / Simpli Safe CMOB1 Wireless Outdoor 1080P Outdoor Security Camera&#10;Brand: SimpliSafe&#10;Price: $199.99&#10;Quantity: 50 units"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    className="min-h-[120px] resize-none"
+                  />
+                  
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={processTextInput}
+                      disabled={processingText || !textInput.trim()}
+                      className="bg-gradient-to-r from-gws-gold to-yellow-500 hover:from-yellow-500 hover:to-gws-gold text-gws-navy font-semibold px-8 py-3 text-lg"
+                    >
+                      {processingText ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Processing Text with AI...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="h-5 w-5 mr-2" />
+                          Process Text with AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 

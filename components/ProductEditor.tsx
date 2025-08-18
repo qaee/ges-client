@@ -112,6 +112,8 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
   const [selectedImage, setSelectedImage] = useState<{ url: string; productName: string; imageIndex: number; allImages: string[] } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Record<number, boolean[]>>({});
   const [primaryImages, setPrimaryImages] = useState<Record<number, number>>({});  // productIndex -> imageIndex
+  const [dragActive, setDragActive] = useState<Record<number, boolean>>({});
+  const [dragCounter, setDragCounter] = useState<Record<number, number>>({});
 
   // Initialize selectedImages and primaryImages when products change
   useEffect(() => {
@@ -261,12 +263,198 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
       fobPort: "",
       
       confidenceScore: 1.0,
-      extractionSource: "manual"
+      extractionSource: "manual",
+      images: []
     };
     setProducts([...products, newProduct]);
     setExpandedIndex(products.length);
     setEditingIndex(products.length);
     toast.success("New product added");
+  };
+
+  const handleImageUpload = (productIndex: number, files: FileList) => {
+    const maxFiles = 10; // Limit to 10 images per product
+    const maxSize = 5 * 1024 * 1024; // 5MB per file
+    
+    const validFiles = Array.from(files).filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image file`);
+        return false;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large (max 5MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    const product = products[productIndex];
+    const currentImageCount = product.images?.length || 0;
+    
+    if (currentImageCount + validFiles.length > maxFiles) {
+      toast.error(`Cannot add ${validFiles.length} images. Maximum ${maxFiles} images per product (currently have ${currentImageCount})`);
+      return;
+    }
+
+    // Convert files to base64 URLs for preview
+    Promise.all(
+      validFiles.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      })
+    ).then(imageUrls => {
+      const updatedProducts = [...products];
+      updatedProducts[productIndex] = {
+        ...updatedProducts[productIndex],
+        images: [...(updatedProducts[productIndex].images || []), ...imageUrls]
+      };
+      setProducts(updatedProducts);
+      
+      // Update selected images to include new ones
+      const newImageCount = imageUrls.length;
+      setSelectedImages(prev => {
+        const currentSelections = prev[productIndex] || [];
+        const newSelections = [...currentSelections, ...new Array(newImageCount).fill(true)];
+        return {
+          ...prev,
+          [productIndex]: newSelections
+        };
+      });
+      
+      toast.success(`${validFiles.length} image(s) uploaded successfully`);
+    });
+  };
+
+  const removeImage = (productIndex: number, imageIndex: number) => {
+    const updatedProducts = [...products];
+    const product = updatedProducts[productIndex];
+    
+    if (product.images) {
+      product.images.splice(imageIndex, 1);
+      setProducts(updatedProducts);
+      
+      // Update selected images
+      setSelectedImages(prev => {
+        const currentSelections = prev[productIndex] || [];
+        currentSelections.splice(imageIndex, 1);
+        return {
+          ...prev,
+          [productIndex]: currentSelections
+        };
+      });
+      
+      // Update primary image if necessary
+      setPrimaryImages(prev => {
+        const currentPrimary = prev[productIndex] || 0;
+        if (currentPrimary >= imageIndex) {
+          return {
+            ...prev,
+            [productIndex]: Math.max(0, currentPrimary - 1)
+          };
+        }
+        return prev;
+      });
+      
+      toast.success("Image removed");
+    }
+  };
+
+  // Drag and Drop handlers
+  const handleDragEnter = (e: React.DragEvent, productIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDragCounter(prev => ({
+      ...prev,
+      [productIndex]: (prev[productIndex] || 0) + 1
+    }));
+    
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setDragActive(prev => ({
+        ...prev,
+        [productIndex]: true
+      }));
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent, productIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDragCounter(prev => {
+      const newCount = (prev[productIndex] || 0) - 1;
+      if (newCount === 0) {
+        setDragActive(prevActive => ({
+          ...prevActive,
+          [productIndex]: false
+        }));
+      }
+      return {
+        ...prev,
+        [productIndex]: newCount
+      };
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent, productIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setDragActive(prev => ({
+      ...prev,
+      [productIndex]: false
+    }));
+    setDragCounter(prev => ({
+      ...prev,
+      [productIndex]: 0
+    }));
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files).filter(file => 
+        file.type.startsWith('image/')
+      );
+      
+      if (files.length > 0) {
+        const dt = new DataTransfer();
+        files.forEach(file => dt.items.add(file));
+        handleImageUpload(productIndex, dt.files);
+      }
+    }
+  };
+
+  // Clipboard paste handler
+  const handleClipboardPaste = (e: React.ClipboardEvent, productIndex: number) => {
+    e.preventDefault();
+    
+    const items = e.clipboardData.items;
+    const imageFiles: File[] = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+    
+    if (imageFiles.length > 0) {
+      const dt = new DataTransfer();
+      imageFiles.forEach(file => dt.items.add(file));
+      handleImageUpload(productIndex, dt.files);
+      toast.success(`${imageFiles.length} image(s) pasted from clipboard`);
+    }
   };
 
   const handleSave = () => {
@@ -694,34 +882,125 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                 </div>
 
                 {/* Product Images */}
-                {product.images && product.images.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="flex items-center">
-                        <ImageIcon className="h-4 w-4 mr-1" />
-                        Product Images ({product.images.length})
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="flex items-center">
+                      <ImageIcon className="h-4 w-4 mr-1" />
+                      Product Images ({product.images?.length || 0})
+                      {product.images && product.images.length > 0 && (
                         <span className="ml-2 text-sm text-green-600">
                           ({getSelectedImageCount(index)} selected)
                         </span>
-                      </Label>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          onClick={() => selectAllImages(index, true)}
-                          className="text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
-                        >
-                          Select All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => selectAllImages(index, false)}
-                          className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
-                        >
-                          Select None
-                        </button>
+                      )}
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      {/* Image Upload */}
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleImageUpload(index, e.target.files);
+                              e.target.value = ''; // Reset input
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <span className="text-xs px-2 py-1 bg-gws-gold hover:bg-gws-darkgold text-gws-navy rounded font-medium">
+                          + Upload Images
+                        </span>
+                      </label>
+                      {product.images && product.images.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => selectAllImages(index, true)}
+                            className="text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
+                          >
+                            Select All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => selectAllImages(index, false)}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
+                          >
+                            Select None
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {(!product.images || product.images.length === 0) ? (
+                    <div 
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
+                        dragActive[index] 
+                          ? 'border-gws-gold bg-gws-gold/10 border-solid' 
+                          : 'border-gray-300 hover:border-gws-gold/50'
+                      }`}
+                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragLeave={(e) => handleDragLeave(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onPaste={(e) => handleClipboardPaste(e, index)}
+                      tabIndex={0}
+                    >
+                      <ImageIcon className={`h-12 w-12 mx-auto mb-4 transition-colors ${
+                        dragActive[index] ? 'text-gws-gold' : 'text-gray-400'
+                      }`} />
+                      {dragActive[index] ? (
+                        <p className="text-gws-gold mb-2 font-medium">Drop images here!</p>
+                      ) : (
+                        <p className="text-gray-500 mb-2">No images uploaded yet</p>
+                      )}
+                      <div className="space-y-2">
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                handleImageUpload(index, e.target.files);
+                                e.target.value = ''; // Reset input
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          <Button type="button" variant="outline" className="border-gws-gold text-gws-gold hover:bg-gws-gold hover:text-white">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Upload Product Images
+                          </Button>
+                        </label>
+                        <p className="text-xs text-gray-400">
+                          Drag & drop images or <span className="font-medium">Ctrl+V</span> to paste from clipboard
+                        </p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  ) : (
+                    <div 
+                      className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4 rounded-lg border-2 border-dashed transition-all duration-200 ${
+                        dragActive[index] 
+                          ? 'border-gws-gold bg-gws-gold/10' 
+                          : 'border-transparent hover:border-gws-gold/30'
+                      }`}
+                      onDragEnter={(e) => handleDragEnter(e, index)}
+                      onDragLeave={(e) => handleDragLeave(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onPaste={(e) => handleClipboardPaste(e, index)}
+                      tabIndex={0}
+                    >
+                      {dragActive[index] && (
+                        <div className="col-span-full flex items-center justify-center p-8 bg-gws-gold/20 rounded-lg border-2 border-dashed border-gws-gold">
+                          <div className="text-center">
+                            <ImageIcon className="h-8 w-8 text-gws-gold mx-auto mb-2" />
+                            <p className="text-gws-gold font-medium">Drop images to add them!</p>
+                          </div>
+                        </div>
+                      )}
                       {product.images.map((imageUrl: string, imgIndex: number) => {
                         const isSelected = selectedImages[index]?.[imgIndex] ?? true;
                         const isPrimary = primaryImages[index] === imgIndex;
@@ -738,9 +1017,24 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                               />
                             </div>
                             
+                            {/* Delete button */}
+                            <div className="absolute top-2 right-2 z-10">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeImage(index, imgIndex);
+                                }}
+                                className="bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Remove image"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                            
                             {/* Primary image button */}
                             {isSelected && (
-                              <div className="absolute top-2 right-2 z-10">
+                              <div className="absolute bottom-2 right-2 z-10">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -768,8 +1062,8 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                             )}
 
                             <div 
-                              className={`aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 transition-colors cursor-pointer ${
-                                isSelected ? 'border-gray-200 hover:border-gws-gold' : 'border-gray-400 opacity-75'
+                              className={`aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 transition-all duration-200 cursor-pointer relative group ${
+                                isSelected ? 'border-gray-200 hover:border-gws-gold shadow-md hover:shadow-lg' : 'border-gray-400 opacity-75'
                               }`}
                               onClick={(e) => {
                                 e.preventDefault();
@@ -804,9 +1098,16 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                           </div>
                         );
                       })}
+                      
+                      {/* Drag & Drop / Paste Instructions */}
+                      <div className="col-span-full mt-2 text-center">
+                        <p className="text-xs text-gray-400">
+                          💡 <span className="font-medium">Pro tip:</span> You can also drag & drop images anywhere in this area or press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl+V</kbd> to paste from clipboard
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* AI Extraction Notes */}
                 {product.extractionNotes && (

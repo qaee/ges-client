@@ -162,6 +162,11 @@ export const aiExtractionService = {
     return response.data;
   },
 
+  processText: async (text: string) => {
+    const response = await api.post('/ai-extraction/process-text', { text });
+    return response.data;
+  },
+
   validateExtraction: async (extractedProducts: any[]) => {
     const response = await api.post('/ai-extraction/validate-extraction', extractedProducts);
     return response.data;
