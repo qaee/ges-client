@@ -933,24 +933,33 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                         <p className="text-gray-500 mb-2">No images uploaded yet</p>
                       )}
                       <div className="space-y-2">
-                        <label className="cursor-pointer">
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files.length > 0) {
-                                handleImageUpload(index, e.target.files);
-                                e.target.value = ''; // Reset input
-                              }
-                            }}
-                            className="hidden"
-                          />
-                          <Button type="button" variant="outline" className="border-gws-gold text-gws-gold hover:bg-gws-gold hover:text-white">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Upload Product Images
-                          </Button>
-                        </label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              handleImageUpload(index, e.target.files);
+                              e.target.value = ''; // Reset input
+                            }
+                          }}
+                          className="hidden"
+                          id={`product-image-upload-${index}`}
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="border-gws-gold text-gws-gold hover:bg-gws-gold hover:text-white cursor-pointer"
+                          onClick={() => {
+                            const input = document.getElementById(`product-image-upload-${index}`) as HTMLInputElement;
+                            if (input) {
+                              input.click();
+                            }
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Upload Product Images
+                        </Button>
                         <p className="text-xs text-gray-400">
                           Drag & drop images or <span className="font-medium">Ctrl+V</span> to paste from clipboard
                         </p>
