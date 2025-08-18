@@ -429,7 +429,7 @@ export default function ProductCreateWizardPage() {
                     placeholder="Paste product information here...&#10;&#10;Example:&#10;UPC # / Simpli Safe CMOB1 Wireless Outdoor 1080P Outdoor Security Camera&#10;Brand: SimpliSafe&#10;Price: $199.99&#10;Quantity: 50 units"
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    className="min-h-[120px] resize-none"
+                    className="min-h-[120px] resize-none border-gws-gold focus-visible:ring-gws-gold"
                   />
                   
                   <div className="flex justify-center">

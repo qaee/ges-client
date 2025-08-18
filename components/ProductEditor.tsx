@@ -11,7 +11,6 @@ import {
   X, 
   AlertCircle, 
   CheckCircle,
-  Edit2,
   Trash2,
   Plus,
   DollarSign,
@@ -106,8 +105,7 @@ const productTypes = [
 export default function ProductEditor({ products: initialProducts, onSave, onCancel, isLoading }: ProductEditorProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>(initialProducts);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const [expandedProducts, setExpandedProducts] = useState<Record<number, boolean>>({});
   const [validationErrors, setValidationErrors] = useState<Record<number, string[]>>({});
   const [selectedImage, setSelectedImage] = useState<{ url: string; productName: string; imageIndex: number; allImages: string[] } | null>(null);
   const [selectedImages, setSelectedImages] = useState<Record<number, boolean[]>>({});
@@ -115,18 +113,25 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
   const [dragActive, setDragActive] = useState<Record<number, boolean>>({});
   const [dragCounter, setDragCounter] = useState<Record<number, number>>({});
 
-  // Initialize selectedImages and primaryImages when products change
+  // Initialize selectedImages, primaryImages, and expanded state when products change
   useEffect(() => {
     const initialSelectedImages: Record<number, boolean[]> = {};
     const initialPrimaryImages: Record<number, number> = {};
+    const initialExpandedProducts: Record<number, boolean> = {};
     
     products.forEach((product, productIndex) => {
+      // Make all products expanded by default
+      initialExpandedProducts[productIndex] = true;
+      
       if (product.images && product.images.length > 0) {
-        initialSelectedImages[productIndex] = new Array(product.images.length).fill(true);
+        // Select only first 3 images by default (or all if less than 3)
+        const defaultSelectionCount = Math.min(3, product.images.length);
+        initialSelectedImages[productIndex] = product.images.map((_: string, idx: number) => idx < defaultSelectionCount);
         initialPrimaryImages[productIndex] = 0; // First image is primary by default
       }
     });
     
+    setExpandedProducts(initialExpandedProducts);
     setSelectedImages(initialSelectedImages);
     setPrimaryImages(initialPrimaryImages);
   }, [products]);
@@ -267,8 +272,7 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
       images: []
     };
     setProducts([...products, newProduct]);
-    setExpandedIndex(products.length);
-    setEditingIndex(products.length);
+    setExpandedProducts(prev => ({ ...prev, [products.length]: true }));
     toast.success("New product added");
   };
 
@@ -531,6 +535,9 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
         idx === imageIndex ? !selected : selected
       );
       
+      const selectedCount = newSelections.filter(Boolean).length;
+      console.log(`Product ${productIndex}: Toggled image ${imageIndex}, now ${selectedCount} images selected`);
+      
       // If we're unselecting the primary image, find a new primary
       if (currentSelections[imageIndex] && primaryImages[productIndex] === imageIndex) {
         const firstSelectedIndex = newSelections.findIndex(selected => selected);
@@ -539,6 +546,7 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
             ...prevPrimary,
             [productIndex]: firstSelectedIndex
           }));
+          console.log(`Product ${productIndex}: Primary image changed to ${firstSelectedIndex}`);
         }
       }
       
@@ -552,10 +560,14 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
   const setPrimaryImage = (productIndex: number, imageIndex: number) => {
     // Only allow setting primary if the image is selected
     if (selectedImages[productIndex]?.[imageIndex]) {
+      console.log(`Setting primary image for product ${productIndex} to image ${imageIndex}`);
       setPrimaryImages(prev => ({
         ...prev,
         [productIndex]: imageIndex
       }));
+      toast.success(`Image ${imageIndex + 1} set as primary for product ${productIndex + 1}`);
+    } else {
+      toast.error("Cannot set unselected image as primary");
     }
   };
 
@@ -623,14 +635,14 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
           <Card 
             key={index} 
             className={`transition-all duration-300 ${
-              expandedIndex === index ? 'ring-2 ring-gws-gold shadow-lg' : ''
+              expandedProducts[index] ? 'ring-2 ring-gws-gold shadow-lg' : ''
             } ${
               validationErrors[index] ? 'border-red-300' : 'border-gray-200'
             }`}
           >
             <CardHeader 
               className="cursor-pointer hover:bg-gray-50 transition-colors"
-              onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+              onClick={() => setExpandedProducts(prev => ({ ...prev, [index]: !prev[index] }))}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -664,17 +676,6 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setEditingIndex(editingIndex === index ? null : index);
-                      setExpandedIndex(index);
-                    }}
-                  >
-                    {editingIndex === index ? <X className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
                       deleteProduct(index);
                     }}
                   >
@@ -684,7 +685,7 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
               </div>
             </CardHeader>
 
-            {expandedIndex === index && (
+            {expandedProducts[index] && (
               <CardContent className="pt-0">
                 {/* Validation Errors */}
                 {validationErrors[index] && (
@@ -706,17 +707,13 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                         <FileText className="h-4 w-4 mr-1" />
                         Description
                       </Label>
-                      {editingIndex === index ? (
-                        <textarea
-                          value={product.description}
-                          onChange={(e) => updateProduct(index, 'description', e.target.value)}
-                          className="w-full p-2 border rounded-lg"
-                          rows={3}
-                          placeholder="Product description"
-                        />
-                      ) : (
-                        <p className="text-sm text-gray-700">{product.description || "No description"}</p>
-                      )}
+                      <textarea
+                        value={product.description}
+                        onChange={(e) => updateProduct(index, 'description', e.target.value)}
+                        className="w-full p-2 border rounded-lg"
+                        rows={3}
+                        placeholder="Product description"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -725,15 +722,11 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                           <Tag className="h-4 w-4 mr-1" />
                           Brand
                         </Label>
-                        {editingIndex === index ? (
-                          <Input
-                            value={product.brand}
-                            onChange={(e) => updateProduct(index, 'brand', e.target.value)}
-                            placeholder="Brand name"
-                          />
-                        ) : (
-                          <p className="text-sm font-medium">{product.brand || "Generic"}</p>
-                        )}
+                        <Input
+                          value={product.brand}
+                          onChange={(e) => updateProduct(index, 'brand', e.target.value)}
+                          placeholder="Brand name"
+                        />
                       </div>
 
                       <div>
@@ -741,51 +734,39 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                           <Hash className="h-4 w-4 mr-1" />
                           SKU
                         </Label>
-                        {editingIndex === index ? (
-                          <Input
-                            value={product.sku}
-                            onChange={(e) => updateProduct(index, 'sku', e.target.value)}
-                            placeholder="SKU/Model"
-                          />
-                        ) : (
-                          <p className="text-sm font-medium">{product.sku || "N/A"}</p>
-                        )}
+                        <Input
+                          value={product.sku}
+                          onChange={(e) => updateProduct(index, 'sku', e.target.value)}
+                          placeholder="SKU/Model"
+                        />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="mb-1">Category</Label>
-                        {editingIndex === index ? (
-                          <select
-                            value={product.category}
-                            onChange={(e) => updateProduct(index, 'category', e.target.value)}
-                            className="w-full p-2 border rounded-lg"
-                          >
-                            {categories.map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <p className="text-sm font-medium">{product.category}</p>
-                        )}
+                        <select
+                          value={product.category}
+                          onChange={(e) => updateProduct(index, 'category', e.target.value)}
+                          className="w-full p-2 border rounded-lg"
+                        >
+                          {categories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <Label className="mb-1">Type</Label>
-                        {editingIndex === index ? (
-                          <select
-                            value={product.type}
-                            onChange={(e) => updateProduct(index, 'type', e.target.value)}
-                            className="w-full p-2 border rounded-lg"
-                          >
-                            {productTypes.map(type => (
-                              <option key={type} value={type}>{type}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <p className="text-sm font-medium">{product.type}</p>
-                        )}
+                        <select
+                          value={product.type}
+                          onChange={(e) => updateProduct(index, 'type', e.target.value)}
+                          className="w-full p-2 border rounded-lg"
+                        >
+                          {productTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -867,15 +848,11 @@ export default function ProductEditor({ products: initialProducts, onSave, onCan
                     {product.condition && (
                       <div>
                         <Label className="mb-1">Condition</Label>
-                        {editingIndex === index ? (
-                          <Input
-                            value={product.condition}
-                            onChange={(e) => updateProduct(index, 'condition', e.target.value)}
-                            placeholder="new, refurbished, etc."
-                          />
-                        ) : (
-                          <p className="text-sm font-medium capitalize">{product.condition}</p>
-                        )}
+                        <Input
+                          value={product.condition}
+                          onChange={(e) => updateProduct(index, 'condition', e.target.value)}
+                          placeholder="new, refurbished, etc."
+                        />
                       </div>
                     )}
                   </div>
