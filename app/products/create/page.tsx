@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+
+// Extend Window interface for timeout tracking
+declare global {
+  interface Window {
+    dragLeaveTimeout?: NodeJS.Timeout | null;
+  }
+}
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -61,41 +68,19 @@ export default function ProductCreateWizardPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Handle file drag and drop
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (window.dragLeaveTimeout) {
+        clearTimeout(window.dragLeaveTimeout);
+        window.dragLeaveTimeout = null;
+      }
+    };
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  }, []);
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFiles(Array.from(e.target.files));
-    }
-  };
-
-  const handleSelectClick = () => {
-    const input = document.getElementById('file-upload') as HTMLInputElement;
-    if (input) {
-      input.click();
-    }
-  };
-
-  const handleFiles = (newFiles: File[]) => {
+  const handleFiles = useCallback((newFiles: File[]) => {
+    console.log('handleFiles called with', newFiles.length, 'files');
+    
     const validFiles = newFiles.filter(file => {
       const validTypes = [
         'application/pdf',
@@ -108,15 +93,19 @@ export default function ProductCreateWizardPage() {
         'text/plain',
         'message/rfc822'
       ];
-      return validTypes.includes(file.type) || 
-             file.name.toLowerCase().endsWith('.eml') ||
-             file.name.toLowerCase().endsWith('.msg');
+      const isValid = validTypes.includes(file.type) || 
+                     file.name.toLowerCase().endsWith('.eml') ||
+                     file.name.toLowerCase().endsWith('.msg');
+      
+      console.log('File validation:', file.name, file.type, 'valid:', isValid);
+      return isValid;
     });
 
     if (validFiles.length !== newFiles.length) {
       toast.error("Some files were skipped. Only PDF, Excel, Images, and Email files are supported.");
     }
 
+    console.log('Setting valid files:', validFiles.length);
     setFiles(validFiles.map(file => {
       const fileWithPreview = file as FileWithPreview;
       if (file.type.startsWith('image/')) {
@@ -124,6 +113,134 @@ export default function ProductCreateWizardPage() {
       }
       return fileWithPreview;
     }));
+  }, []);
+
+  // Handle file drag and drop with timeout-based leave detection
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear any pending timeout
+    if (window.dragLeaveTimeout) {
+      clearTimeout(window.dragLeaveTimeout);
+      window.dragLeaveTimeout = null;
+    }
+    
+    // Only set active if not already active
+    if (!dragActive) {
+      setDragActive(true);
+      console.log('Setting drag active to true');
+    }
+  }, [dragActive]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Set a timeout to deactivate drag state
+    // This will be cleared if dragEnter fires again within the timeout
+    window.dragLeaveTimeout = setTimeout(() => {
+      setDragActive(false);
+      console.log('Setting drag active to false - timeout expired');
+      window.dragLeaveTimeout = null;
+    }, 100); // 100ms delay
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear any pending timeout and reset drag state
+    if (window.dragLeaveTimeout) {
+      clearTimeout(window.dragLeaveTimeout);
+      window.dragLeaveTimeout = null;
+    }
+    setDragActive(false);
+
+    console.log('Drop event triggered', e.dataTransfer.files.length, 'files');
+
+    // Start with basic file system support
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      console.log('Files found:', files.map(f => f.name));
+      handleFiles(files);
+      return;
+    }
+
+    // Handle DataTransferItems for images from other apps
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      const files: File[] = [];
+      
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const item = e.dataTransfer.items[i];
+        console.log('Processing item:', item.kind, item.type);
+        
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) {
+            files.push(file);
+          }
+        }
+      }
+
+      if (files.length > 0) {
+        console.log('Files from items:', files.map(f => f.name));
+        handleFiles(files);
+        return;
+      }
+
+      // Handle images from web pages asynchronously
+      setTimeout(async () => {
+        const asyncFiles: File[] = [];
+        
+        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+          const item = e.dataTransfer.items[i];
+          
+          if (item.kind === 'string' && item.type === 'text/uri-list') {
+            try {
+              const url = await new Promise<string>((resolve) => {
+                item.getAsString(resolve);
+              });
+              
+              if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes('data:image/')) {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const fileName = url.split('/').pop()?.split('?')[0] || 'dropped-image.jpg';
+                const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+                asyncFiles.push(file);
+              }
+            } catch (error) {
+              console.warn('Failed to process dropped URL:', error);
+            }
+          }
+        }
+
+        if (asyncFiles.length > 0) {
+          handleFiles(asyncFiles);
+        }
+      }, 0);
+    }
+
+    console.log('No files found in drop event');
+    toast.error("No valid files found. Please drag and drop supported file types.");
+  }, [handleFiles]);
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleSelectClick = () => {
+    const input = document.getElementById('file-upload') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
   };
 
   const removeFile = (index: number) => {
@@ -247,6 +364,7 @@ export default function ProductCreateWizardPage() {
     setTextInput("");
     setExtractionResult(null);
     setCreatedProducts([]);
+    setDragActive(false);
   };
 
   if (!isAuthenticated || !user) {
@@ -368,17 +486,20 @@ export default function ProductCreateWizardPage() {
                     ? 'border-gws-gold bg-gws-gold/10' 
                     : 'border-gray-300 hover:border-gws-gold/50 hover:bg-gray-50'
                 }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
                 onDrop={handleDrop}
               >
                 <Upload className="h-16 w-16 text-gws-gold mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                  Drag & Drop Files Here
+                  {dragActive ? 'Drop Files Here' : 'Drag & Drop Files Here'}
                 </h3>
                 <p className="text-gray-500 mb-6">
-                  or click to select files from your computer
+                  {dragActive 
+                    ? 'Drop files from your computer or images from other apps' 
+                    : 'or click to select files from your computer'
+                  }
                 </p>
                 
                 <input
@@ -401,6 +522,7 @@ export default function ProductCreateWizardPage() {
                 
                 <div className="mt-6 text-sm text-gray-500">
                   <p>Supported formats: PDF, Excel (.xlsx, .xls), Images (JPG, PNG), Email files</p>
+                  <p>You can also drag images directly from browsers, image viewers, or other apps</p>
                   <p>Maximum file size: 10MB per file</p>
                 </div>
               </div>
