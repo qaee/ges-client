@@ -1,6 +1,7 @@
 {
-  "name": "gws-client",
-  "version": "0.1.0",
+  "name": "merchant-seller-portal",
+  "version": "1.0.0",
+  "description": "Merchant Connect Seller Portal - Platform for sellers to manage their products and services",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

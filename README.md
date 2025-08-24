@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Merchant Seller Portal
 
-## Getting Started
+## Overview
+The Merchant Seller Portal is a comprehensive platform designed for sellers to manage their products, services, and business operations within the Merchant Connect ecosystem.
 
-First, run the development server:
+## Features
+- Product and service listing management
+- Order processing and fulfillment
+- Business profile management
+- Sales analytics and reporting
+- Customer communication tools
+- Inventory management
 
+## Prerequisites
+- Node.js 18.x or higher
+- npm or yarn package manager
+
+## Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Development
+```bash
+npm run dev
+```
+The application will be available at http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Building for Production
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Technology Stack
+- Next.js 15.x with App Router
+- React 19.x
+- TypeScript
+- Tailwind CSS
+- ShadCN UI Components
+- Axios for API communication
 
-## Learn More
+## User Access
+All seller accounts require admin approval before activation. Upon registration, sellers must provide:
+- Business verification documents
+- Company registration details
+- Tax identification numbers
+- Contact information
 
-To learn more about Next.js, take a look at the following resources:
+## API Integration
+This portal communicates with the Merchant Connect Spring Boot backend server for all business operations.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Security
+- JWT-based authentication
+- Role-based access control (RBAC)
+- Secure API endpoints
+- Session management
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Support
+For technical support and questions, please contact the Merchant Connect development team.
