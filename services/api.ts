@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthResponse, LoginData, RegisterData, Product } from '@/types';
+import { AuthResponse, LoginData, RegisterData, Product, ProductOverview } from '@/types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -116,8 +116,13 @@ export const productService = {
     await api.delete(`/products/${id}`);
   },
 
-  getMerchantProducts: async (): Promise<Product[]> => {
-    const response = await api.get<Product[]>('/products/merchant');
+  getMerchantProducts: async (): Promise<ProductOverview[]> => {
+    const response = await api.get<ProductOverview[]>('/products/merchant');
+    return response.data;
+  },
+
+  getMerchantProductById: async (id: string | number): Promise<Product> => {
+    const response = await api.get<Product>(`/products/merchant/${id}`);
     return response.data;
   },
 

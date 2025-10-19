@@ -23,10 +23,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
+
     if (storedUser && token) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Only allow MERCHANT users to access this portal
+        if (parsedUser.role !== 'MERCHANT') {
+          console.warn('Non-merchant user attempted to access merchant portal');
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          toast.error('Access denied. This portal is only for merchants.');
+        } else {
+          setUser(parsedUser);
+        }
       } catch (error) {
         console.error('Failed to parse stored user:', error);
         localStorage.removeItem('user');
@@ -39,6 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (data: LoginData) => {
     try {
       const response: AuthResponse = await authService.login(data);
+
+      // Check if user is a MERCHANT
+      if (response.role !== 'MERCHANT') {
+        toast.error('Access denied. This portal is only for merchants. Please contact support if you believe this is an error.');
+        throw new Error('Unauthorized: Only merchants can access this portal');
+      }
+
       const userData: User = {
         id: response.userId,
         email: response.email,
@@ -47,13 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: response.role as User['role'],
         tier: response.tier as User['tier'],
       };
-      
+
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Login successful!');
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Login failed. Please try again.';
+      const message = error.response?.data?.error || error.message || 'Login failed. Please try again.';
       toast.error(message);
       throw error;
     }
@@ -61,7 +77,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const response: AuthResponse = await authService.register(data);
+      // Force role to MERCHANT for this portal
+      const merchantData = { ...data, role: 'MERCHANT' };
+      const response: AuthResponse = await authService.register(merchantData);
+
+      // Double-check the role from response
+      if (response.role !== 'MERCHANT') {
+        toast.error('Access denied. This portal is only for merchants. Please contact support if you believe this is an error.');
+        throw new Error('Unauthorized: Only merchants can access this portal');
+      }
+
       const userData: User = {
         id: response.userId,
         email: response.email,
@@ -70,13 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: response.role as User['role'],
         tier: response.tier as User['tier'],
       };
-      
+
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Registration successful!');
     } catch (error: any) {
-      const message = error.response?.data?.error || 'Registration failed. Please try again.';
+      const message = error.response?.data?.error || error.message || 'Registration failed. Please try again.';
       toast.error(message);
       throw error;
     }

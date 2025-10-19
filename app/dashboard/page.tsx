@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { productService } from "@/services/api";
-import { Product } from "@/types";
+import { ProductOverview } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,8 @@ import { toast } from "sonner";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductOverview[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductOverview[]>([]); // Store all merchant products
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -31,30 +32,52 @@ export default function DashboardPage() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await productService.getActiveProducts();
-      setProducts(data);
-    } catch (error) {
-      toast.error("Failed to load products");
+      console.log("Loading merchant products for user:", user);
+      console.log("Auth token:", localStorage.getItem('token'));
+
+      // Get only products for the logged-in merchant
+      const data = await productService.getMerchantProducts();
+      console.log("Received merchant products:", data);
+
+      // Ensure data is always an array
+      const productsArray = Array.isArray(data) ? data : [];
+      console.log("Products array length:", productsArray.length);
+
+      setAllProducts(productsArray); // Store all merchant products
+      setProducts(productsArray); // Display all products initially
+    } catch (error: any) {
+      console.error("Failed to load products:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      setAllProducts([]);
+      setProducts([]); // Reset to empty array on error
+      toast.error(error.response?.data?.message || "Failed to load products");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      loadProducts();
+  const handleSearch = () => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      // If search is empty, show all merchant products
+      setProducts(allProducts);
       return;
     }
-    
-    try {
-      setLoading(true);
-      const data = await productService.searchProducts(searchQuery);
-      setProducts(data);
-    } catch (error) {
-      toast.error("Search failed");
-    } finally {
-      setLoading(false);
-    }
+
+    // Filter merchant products locally by name, brand, description, SKU, or category
+    const filtered = allProducts.filter((product) => {
+      return (
+        product.name?.toLowerCase().includes(query) ||
+        product.brand?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query) ||
+        product.sku?.toLowerCase().includes(query) ||
+        product.category?.toLowerCase().includes(query)
+      );
+    });
+
+    setProducts(filtered);
   };
 
   const handleLogout = () => {
@@ -110,8 +133,8 @@ export default function DashboardPage() {
               <Package className="h-5 w-5 text-white" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{products.length}</div>
-              <p className="text-xs text-white/70">Available for trading</p>
+              <div className="text-3xl font-bold">{allProducts.length}</div>
+              <p className="text-xs text-white/70">Your products</p>
             </CardContent>
           </Card>
 
@@ -143,7 +166,7 @@ export default function DashboardPage() {
               <DollarSign className="h-5 w-5 text-gws-navy" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{user.tier.replace('TIER', 'T').replace('_', ' ')}</div>
+              <div className="text-3xl font-bold">{user.tier ? user.tier.replace('TIER', 'T').replace('_', ' ') : 'N/A'}</div>
               <p className="text-xs text-gws-navy/70">Membership level</p>
             </CardContent>
           </Card>
@@ -196,11 +219,35 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
           {loading ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-gray-500">Loading products...</p>
+              <div className="flex flex-col items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gws-gold mb-4"></div>
+                <p className="text-gray-500">Loading products...</p>
+              </div>
             </div>
           ) : products.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-500">No products found</p>
+            <div className="col-span-full">
+              <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-dashed border-gray-300">
+                <CardContent className="text-center py-16">
+                  <div className="flex flex-col items-center">
+                    <Package className="h-20 w-20 text-gray-400 mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Products Available</h3>
+                    <p className="text-gray-500 mb-6 max-w-md">
+                      {searchQuery
+                        ? `No products match your search for "${searchQuery}". Try different keywords or browse all products.`
+                        : "You haven't created any products yet. Get started by using the AI Product Wizard above to upload product information."}
+                    </p>
+                    {searchQuery && (
+                      <Button
+                        onClick={() => { setSearchQuery(""); setProducts(allProducts); }}
+                        variant="gws"
+                        className="shadow-lg"
+                      >
+                        Clear Search & View All
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           ) : (
             products.map((product) => (
@@ -247,22 +294,46 @@ export default function DashboardPage() {
                     <span className="text-sm font-semibold text-gray-800">{product.category}</span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-medium text-purple-600">Quantity</span>
-                    <span className="text-sm font-semibold text-gray-800">{product.quantity} units</span>
+                    <span className="text-xs font-medium text-purple-600">
+                      {product.variantType === 'PARENT' ? 'Variants' : 'Quantity'}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {product.variantType === 'PARENT'
+                        ? `${product.variantCount || product.variants?.length || 0} options`
+                        : `${product.quantity || 0} units`}
+                    </span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 mt-3">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-xs text-gray-500 line-through">
-                          ${product.originalPrice}
-                        </p>
-                        <p className="text-xl font-bold text-gws-gold">
-                          ${product.discountedPrice}
-                        </p>
+                        {product.variantType === 'PARENT' ? (
+                          <>
+                            <p className="text-xs text-gray-500">Starting from</p>
+                            <p className="text-xl font-bold text-gws-gold">
+                              ${product.basePrice || product.discountedPrice || 0}
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-500 line-through">
+                              ${product.originalPrice || 0}
+                            </p>
+                            <p className="text-xl font-bold text-gws-gold">
+                              ${product.discountedPrice || 0}
+                            </p>
+                          </>
+                        )}
                       </div>
-                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
-                        {calculateDiscount(product.originalPrice, product.discountedPrice)}% OFF
-                      </div>
+                      {product.variantType !== 'PARENT' && product.originalPrice && product.discountedPrice && (
+                        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
+                          {calculateDiscount(product.originalPrice, product.discountedPrice)}% OFF
+                        </div>
+                      )}
+                      {product.variantType === 'PARENT' && (
+                        <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-2 rounded-full text-xs font-bold shadow-lg">
+                          Multiple Options
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Link href={`/products/${product.id}`}>

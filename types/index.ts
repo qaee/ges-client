@@ -6,7 +6,7 @@ export interface User {
   companyName?: string;
   phoneNumber?: string;
   role: 'ADMIN' | 'MERCHANT' | 'BUYER' | 'RESELLER';
-  tier: 'TIER1_ENTERPRISE' | 'TIER2_RETAILER' | 'TIER3_SMB';
+  tier: 'TIER1_ENTERPRISE' | 'TIER2_RETAILER' | 'TIER3_SMB' | null;
 }
 
 export interface AuthResponse {
@@ -35,14 +35,28 @@ export interface RegisterData {
   tier?: string;
 }
 
-// Size and color variant information
+// Product Variant with full attribute support
+export interface BulkPricingTier {
+  quantity: number;    // Minimum quantity for this tier
+  price: number;       // Price per unit at this tier
+}
+
 export interface ProductVariant {
   id?: number;
-  size?: string;
-  color?: string;
-  quantity: number;
   sku?: string;
-  additionalCost?: number; // Extra cost for this variant
+  variantName?: string; // e.g., "Red / Medium"
+  attributes: Record<string, string>; // {"color": "Red", "size": "M", "material": "Cotton"}
+  originalPrice?: number;
+  discountedPrice?: number;
+  quantity?: number;
+  minOrderQuantity?: number;
+  maxOrderQuantity?: number;
+  bulkPricing?: BulkPricingTier[];
+  images?: string[]; // Variant-specific images
+  primaryImageIndex?: number;
+  status?: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // Shipping and logistics information
@@ -72,67 +86,143 @@ export interface ProductCompliance {
   certification?: string[]; // Other certifications
 }
 
-// Enhanced Product interface
+// Product enums matching server schema
+export enum ProductCategory {
+  ELECTRONICS = 'ELECTRONICS',
+  APPAREL = 'APPAREL',
+  FURNITURE = 'FURNITURE',
+  GENERAL_MERCHANDISE = 'GENERAL_MERCHANDISE',
+  FOOTWEAR = 'FOOTWEAR',
+  HOME_GOODS = 'HOME_GOODS',
+  ACCESSORIES = 'ACCESSORIES'
+}
+
+export enum ProductType {
+  CLOSEOUT = 'CLOSEOUT',
+  OVERSTOCK = 'OVERSTOCK',
+  FACTORY_OVERRUN = 'FACTORY_OVERRUN',
+  BRANDED = 'BRANDED',
+  PRIVATE_LABEL = 'PRIVATE_LABEL'
+}
+
+export enum ProductStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
+  PENDING_APPROVAL = 'PENDING_APPROVAL'
+}
+
+export enum VariantType {
+  SIMPLE = 'SIMPLE',   // No variants (traditional product)
+  PARENT = 'PARENT'    // Parent product with variants
+}
+
+// Lightweight product overview for list/dashboard display
+export interface ProductOverview {
+  id: number;
+  name: string;
+  description?: string;
+  brand?: string;
+  category: string;
+  type: string;
+
+  // Pricing
+  originalPrice: number;
+  discountedPrice: number;
+  basePrice?: number; // For parent products
+
+  // Inventory
+  quantity?: number; // For simple products
+
+  // Variant info (without full variant details)
+  variantType?: VariantType | string;
+  variantCount?: number; // Count of variants instead of full list
+
+  // Images (only what's needed for display)
+  images: string[];
+  primaryImageIndex?: number;
+
+  // Status
+  status: string;
+}
+
+// Enhanced Product interface matching server schema
 export interface Product {
   id: number;
   name: string;
-  description: string;
-  sku: string;
-  brand: string;
+  description?: string;
+  sku?: string;
+  brand?: string;
   category: string;
   type: string;
-  
+
   // Pricing structure
   originalPrice: number;
   discountedPrice: number;
-  wholesalePrice?: number; // Separate wholesale pricing
-  retailPrice?: number; // MSRP
-  minimumPrice?: number; // Floor price
-  
+
   // Inventory management
-  quantity: number;
-  minOrderQuantity: number;
-  maxOrderQuantity?: number;
-  variants?: ProductVariant[]; // Size/color variants
-  reservedQuantity?: number; // Quantity on hold
-  
-  // Product specifications
-  material?: string; // e.g., "100% Cotton"
-  size?: string; // Main size or size range
-  color?: string; // Main color
-  model?: string; // Model number/style
-  condition: 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | 'INTACT';
-  
-  // Business information
-  costPrice?: number; // Merchant's cost
-  margin?: number; // Profit margin percentage
-  currency: string; // USD, CAD, etc.
-  taxRate?: number; // Tax rate percentage
-  
-  // Shipping & logistics
-  shipping?: ShippingInfo;
-  
-  // Compliance & certification
-  compliance?: ProductCompliance;
-  
-  // Additional merchant data
+  quantity?: number;
+  minOrderQuantity?: number;
+
+  // ========== VARIANT SUPPORT ==========
+  // Variant type: SIMPLE (no variants), PARENT (has variants)
+  variantType?: VariantType | string;
+
+  // Base price for parent products (usually the lowest variant price)
+  basePrice?: number;
+
+  // Variant options configuration (for parent products)
+  // Example: {"color": ["Red", "Blue"], "size": ["S", "M", "L"]}
+  variantOptions?: Record<string, string[]>;
+
+  // All variants for this parent product
+  variants?: ProductVariant[];
+
+  // Common attributes (for filtering/searching)
+  // Example: {"material": "Cotton", "gender": "Unisex"}
+  attributes?: Record<string, string>;
+
+  // ========== END VARIANT SUPPORT ==========
+
+  // Images
   images: string[];
   primaryImageIndex?: number;
-  merchant: User;
+
+  // Merchant and status
+  merchant?: User;
   status: string;
-  
-  // Marketplace features
+
+  // Timestamps
+  createdAt?: Date;
+  updatedAt?: Date;
+
+  // Legacy fields (for backward compatibility)
+  wholesalePrice?: number;
+  retailPrice?: number;
+  minimumPrice?: number;
+  maxOrderQuantity?: number;
+  reservedQuantity?: number;
+  material?: string;
+  size?: string;
+  color?: string;
+  model?: string;
+  condition?: 'NEW' | 'USED' | 'REFURBISHED' | 'DAMAGED' | 'INTACT';
+  costPrice?: number;
+  margin?: number;
+  currency?: string;
+  taxRate?: number;
+  shipping?: ShippingInfo;
+  compliance?: ProductCompliance;
   featured?: boolean;
   publishedAt?: Date;
   expiresAt?: Date;
   views?: number;
   inquiries?: number;
   lastUpdated?: Date;
-  
-  // SEO and marketing
   tags?: string[];
   keywords?: string[];
   metaDescription?: string;
+  variantCount?: number;
 }
 
 export interface Order {
