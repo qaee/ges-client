@@ -12,8 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Package,
-  Star,
-  ChevronDown,
   X,
   ChevronLeft,
   ChevronRight,
@@ -31,7 +29,6 @@ export default function ProductDetailsPage() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [mainImage, setMainImage] = useState<string>("");
-  const [showRawJson, setShowRawJson] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
 
@@ -49,11 +46,6 @@ export default function ProductDetailsPage() {
     try {
       setLoading(true);
       const data = await productService.getMerchantProductById(productId);
-      console.log("Loaded product data:", data);
-      console.log("Product name:", data?.name);
-      console.log("Product price:", data?.discountedPrice);
-      console.log("Product category:", data?.category);
-      console.log("Product type:", data?.type);
 
       if (!data) {
         throw new Error("No product data received");
@@ -234,17 +226,6 @@ export default function ProductDetailsPage() {
         </div>
       </div>
 
-      {/* Debug Panel */}
-      <div className="container mx-auto px-4 py-2">
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-xs">
-          <strong>DEBUG:</strong> Name: {product.name || 'NULL'} |
-          Price: {String(product.discountedPrice) || 'NULL'} |
-          Category: {product.category || 'NULL'} |
-          Type: {product.type || 'NULL'} |
-          VariantType: {product.variantType || 'NULL'}
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 py-6">
         {/* Main Product Layout - Amazon Style */}
         <div className="grid md:grid-cols-12 gap-8">
@@ -294,29 +275,10 @@ export default function ProductDetailsPage() {
 
           {/* Right Column - Product Info (Amazon style) */}
           <div className="md:col-span-7">
-            {/* Brand */}
-            {product.brand && (
-              <Link href="#" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                Visit the {product.brand} Store
-              </Link>
-            )}
-
             {/* Product Title */}
-            <h1 className="text-2xl font-normal mt-1 mb-2">
+            <h1 className="text-2xl font-normal mb-4">
               {product.name}
             </h1>
-
-            {/* Rating (Mock for now) */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex">
-                {[1,2,3,4,5].map(star => (
-                  <Star key={star} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <span className="text-sm text-blue-600">4.5</span>
-              <span className="text-sm text-gray-600">|</span>
-              <button className="text-sm text-blue-600 hover:text-blue-800">Search this page</button>
-            </div>
 
             <div className="border-t border-b py-3 mb-4">
               {/* Price */}
@@ -332,11 +294,6 @@ export default function ProductDetailsPage() {
                     </Badge>
                   </>
                 )}
-              </div>
-
-              {/* Additional info */}
-              <div className="text-sm text-gray-600 mt-1">
-                <span className="text-blue-600">FREE Returns</span>
               </div>
             </div>
 
@@ -473,7 +430,10 @@ export default function ProductDetailsPage() {
             {product.description && (
               <div className="mb-6">
                 <h2 className="font-bold text-lg mb-2">About this item</h2>
-                <p className="text-sm text-gray-700 leading-relaxed">{product.description}</p>
+                <div
+                  className="text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
               </div>
             )}
           </div>
@@ -639,25 +599,6 @@ export default function ProductDetailsPage() {
             </div>
           )}
 
-          {/* Developer Tools - Raw JSON */}
-          <div className="mt-8 border-t pt-6">
-            <Button
-              variant="outline"
-              onClick={() => setShowRawJson(!showRawJson)}
-              className="mb-4"
-            >
-              {showRawJson ? 'Hide' : 'Show'} Complete Backend Response (JSON)
-              <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showRawJson ? 'rotate-180' : ''}`} />
-            </Button>
-
-            {showRawJson && (
-              <div className="bg-slate-900 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-xs text-green-400 font-mono">
-                  {JSON.stringify(product, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
